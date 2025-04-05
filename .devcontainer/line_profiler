@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-# Example: Simulate agent data with NumPy arrays
+# Simulate agent data with NumPy arrays (5 agents, each with 3 features)
 agents_data = np.random.rand(5, 3)  # 5 agents, each with 3 features
 
 # Create a DataFrame from the NumPy array
@@ -10,14 +10,15 @@ df_agents = pd.DataFrame(agents_data, columns=['Feature_1', 'Feature_2', 'Featur
 print("Initial DataFrame of Agents:")
 print(df_agents)
 
-# Example: Perform some vectorized operations with NumPy
+# Perform vectorized normalization on Feature_1 using NumPy
 df_agents['Normalized_Feature_1'] = (df_agents['Feature_1'] - np.mean(df_agents['Feature_1'])) / np.std(df_agents['Feature_1'])
 
 print("\nDataFrame after Normalizing Feature 1:")
 print(df_agents)
-# Example: Simple reward function based on agent's Feature_1 value
+
+# Define a simple reward function based on agent's Feature_1 value
 def reward_function(agent_data):
-    # Simple condition: if Feature_1 exceeds 0.7, the agent gets a reward of +10, else -5
+    # If Feature_1 exceeds 0.7, assign a reward of +10; otherwise, -5
     if agent_data['Feature_1'] > 0.7:
         return 10
     else:
