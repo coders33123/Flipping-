@@ -26,4 +26,31 @@ alphabet_map = {
     'X': (6, 'Cross/Exchange'),
     'Y': (7, 'Yield'),
     'Z': (8, 'Zone')
-}
+}def flip_word(word: str) -> str:
+    return word[::-1].upper()
+
+def interpret_word(word: str) -> list:
+    interpretation = []
+    for letter in word.upper():
+        if letter in alphabet_map:
+            number, meaning = alphabet_map[letter]
+            interpretation.append((letter, number, meaning))
+        else:
+            interpretation.append((letter, None, 'Unknown'))
+    return interpretation,test_words = ["LOCK", "TIME", "WORD", "FLOW"]
+
+for word in test_words:
+    flipped = flip_word(word)
+    interpreted = interpret_word(flipped)
+    
+    print(f"\nOriginal: {word}")
+    print(f"Flipped : {flipped}")
+    print("Breakdown:")
+    for letter, number, meaning in interpreted:
+        print(f"  {letter} → {number} → {meaning}")Original: LOCK
+Flipped : KCOL
+Breakdown:
+  K → 2 → Key
+  C → 3 → Combine
+  O → 6 → Output
+  L → 3 → Link/Language
