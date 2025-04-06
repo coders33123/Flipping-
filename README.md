@@ -1,7 +1,19 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from nltk.corpus import wordnet as wn
+save_metadata(f1, self.label_encoder.classes_)
+# Train the model and get the f1_score manually
+f1_score = manager.train_model(acronym_data)
 
+# Save metadata
+save_metadata(f1_score, manager.label_encoder.classes_)
+def train_model(self, data: List[Dict[str, str]]) -> float:
+    ...
+    self.model.fit(X_train, y_train)
+    f1 = f1_score(y_test, self.model.predict(X_test), average='weighted')
+    ...
+    return f1
+    
 def get_contextual_meaning(letter, surrounding_words):
     """
     Generate a contextual meaning for a letter based on surrounding words.
