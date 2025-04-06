@@ -1,7 +1,20 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from nltk.corpus import wordnet as wn
-save_metadata(f1, self.label_encoder.classes_)
+save_metadata(f1, 
+#<<[graph_core.py:init_and_add_word]>>
+import networkx as nx
+from typing import List
+
+class GraphManager:
+    def __init__(self):
+        self.graph = nx.Graph()
+
+    def add_word(self, word: str, related_words: List[str]):
+        self.graph.add_node(word)
+        for rw in related_words:
+            self.graph.add_edge(word, rw)
+#<<[/graph_core.py:init_and_add_word]>>self.label_encoder.classes_)
 # Train the model and get the f1_score manually
 f1_score = manager.train_model(acronym_data)
 
