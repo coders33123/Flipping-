@@ -1,56 +1,85 @@
-# Alphabet to number and meaning map (simplified version for now)
-alphabet_map = {
-    'A': (1, 'Action'),
-    'B': (2, 'Be/Between'),
-    'C': (3, 'Combine'),
-    'D': (4, 'Doer'),
-    'E': (5, 'Evolve'),
-    'F': (6, 'Fix'),
-    'G': (7, 'Generate'),
-    'H': (8, 'Hold'),
-    'I': (9, 'Input'),
-    'J': (1, 'Journey'),
-    'K': (2, 'Key'),
-    'L': (3, 'Link/Language'),
-    'M': (4, 'Manifest'),
-    'N': (5, 'Navigate'),
-    'O': (6, 'Output'),
-    'P': (7, 'Project'),
-    'Q': (8, 'Query'),
-    'R': (9, 'Root/Result'),
-    'S': (1, 'System'),
-    'T': (2, 'Time'),
-    'U': (3, 'Union'),
-    'V': (4, 'Value'),
-    'W': (5, 'Will'),
-    'X': (6, 'Cross/Exchange'),
-    'Y': (7, 'Yield'),
-    'Z': (8, 'Zone')
-}def flip_word(word: str) -> str:
-    return word[::-1].upper()
+import networkx as nx
+import matplotlib.pyplot as plt
+from nltk.corpus import wordnet as wn
 
-def interpret_word(word: str) -> list:
-    interpretation = []
-    for letter in word.upper():
-        if letter in alphabet_map:
-            number, meaning = alphabet_map[letter]
-            interpretation.append((letter, number, meaning))
-        else:
-            interpretation.append((letter, None, 'Unknown'))
-    return interpretation,test_words = ["LOCK", "TIME", "WORD", "FLOW"]
-
-for word in test_words:
-    flipped = flip_word(word)
-    interpreted = interpret_word(flipped)
+def get_contextual_meaning(letter, surrounding_words):
+    """
+    Generate a contextual meaning for a letter based on surrounding words.
     
-    print(f"\nOriginal: {word}")
-    print(f"Flipped : {flipped}")
-    print("Breakdown:")
-    for letter, number, meaning in interpreted:
-        print(f"  {letter} → {number} → {meaning}")Original: LOCK
-Flipped : KCOL
-Breakdown:
-  K → 2 → Key
-  C → 3 → Combine
-  O → 6 → Output
-  L → 3 → Link/Language
+    Args:
+    - letter (str): The letter whose meaning needs to be generated.
+    - surrounding_words (list): A list of words surrounding the target word.
+    
+    Returns:
+    - str: A contextual meaning of the letter.
+    """
+    meanings = []
+    
+    # Iterate through the surrounding words to understand the context
+    for word in surrounding_words:
+        synsets = wn.synsets(word)
+        if synsets:
+            # Use the first synset's lemma names as potential meanings
+            meanings.extend([lemma.name() for lemma in synsets[0].lemmas()])
+    
+    # Here, we're simply returning the first meaning related to the letter
+    # This could be expanded with domain-specific knowledge
+    return meanings[0] if meanings else "unknown"
+
+def encode_word_with_context(word, surrounding_words):
+    """
+    Encodes a word into a numeric vector based on the alphabet-to-number mapping,
+    but modifies each letter's encoding based on surrounding context.
+    
+    Args:
+    - word (str): The word to encode.
+    - surrounding_words (list): List of surrounding words for contextual analysis.
+    
+    Returns:
+    - List[int]: A list of integers representing the word with contextual adjustments.
+    """
+    encoded_word = []
+    
+    for char in word.upper():
+        if char.isalpha():
+            # Get the contextual meaning of the letter based on surrounding words
+            meaning = get_contextual_meaning(char, surrounding_words)
+            
+            # Adjust the letter encoding based on the contextual meaning
+            letter_encoding = (ord(char) - ord('A') + 1)  # Basic encoding (1-26)
+            
+            # Here, we could adjust encoding based on the meaning, for now, we use the length of meaning
+            # As a simple proxy, we modify the encoding based on the length of the meaning
+            contextual_encoding = letter_encoding + len(meaning)
+            encoded_word.append(contextual_encoding)
+        else:
+            encoded_word.append(0)  # For non-alphabetic characters (e.g., spaces)
+    
+    return encoded_word
+
+def add_to_graph(graph, word, relationships, surrounding_words):
+    """
+    Adds a new word (acronym) to the graph and updates relationships.
+    
+    Args:
+    - graph (networkx.Graph): The existing graph.
+    - word (str): The new word (acronym) to add.
+    - relationships (list): A list of relationships (edges) with other words.
+    - surrounding_words (list): List of surrounding words for contextual analysis.
+    """
+    # Add the new word as a node with context-aware encoding
+    graph.add_node(word, encoded=encode_word_with_context(word, surrounding_words))
+    
+    # Add relationships (edges) with other words
+    for related_word in relationships:
+        graph.add_edge(word, related_word)
+
+# Create an empty graph
+graph = nx.Graph()
+
+# Example of adding a new word and relationships
+add_to_graph(graph, "cloudy", ["weather", "humidity"], ["temperature", "rain", "storm"])
+
+# Visualize the updated graph
+nx.draw(graph, with_labels=True, node_size=2000, node_color="skyblue", font_size=12, font_weight="bold")
+plt.show()
