@@ -1,29 +1,52 @@
-import networkx as nx
-from typing import Dict, List, Tuple
+name: Python application
 
-# Core scoring function for symbolic transitions
-def symbolic_score(base_weight: float, metadata: Dict) -> float:
-    flip_depth = metadata.get("flip_depth", 1)
-    vowel_flow = metadata.get("vowel_flow", False)
-    symbolic_modifier = 1.2 if vowel_flow else 1.0
-    return base_weight * symbolic_modifier / flip_depth
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
+permissions:
+  contents: read
 
-# Symbolic Graph Handler
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Test with pytest
+      run: |
+        pytest test_symbolic_decoder.py
 class SymbolicGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
 
-    def add_edge(self, from_node: str, to_node: str, base_weight: float, metadata: Dict = {}):
+    def add_edge(self, from_node: str, to_node: str, base_weight: float, metadata: Dict):
         weight = symbolic_score(base_weight, metadata)
         self.graph.add_edge(from_node, to_node, weight=weight, metadata=metadata)
 
-
-# Symbolic Viterbi-style Decoder
 class SymbolicViterbi:
     def __init__(self, graph: SymbolicGraph, scoring_function):
-        self.graph = graph.graph
-        self.score_fn = scoring_function
+        self.graph = graph
+        self.scoring_function = scoring_function
 
     def decode(self, start: str, end: str, top_n: int = 1) -> List[Tuple[List[str], float]]:
         all_paths = list(nx.all_simple_paths(self.graph, source=start, target=end, cutoff=10))
@@ -40,8 +63,6 @@ class SymbolicViterbi:
         path_scores.sort(key=lambda x: x[1], reverse=True)
         return path_scores[:top_n]
 
-
-# Complete Decoder System
 class SymbolicDecoderSystem:
     def __init__(self):
         self.graph = SymbolicGraph()
@@ -53,16 +74,11 @@ class SymbolicDecoderSystem:
     def find_optimal_paths(self, start: str, end: str, top_n: int = 1) -> List[Tuple[List[str], float]]:
         return self.viterbi.decode(start, end, top_n)
 
-
-# Example use
 if __name__ == "__main__":
     decoder = SymbolicDecoderSystem()
-
     transitions = [
         ("identity", "ide", 1.2, {"flip_depth": 1}),
         ("ide", "it", 0.9, {"flip_depth": 1}),
-        ("it", "ati", 0.7, {"flip_depth": 2}),
-        ("ati", "viterbi", 0.5, {"flip_depth": 3}),
         ("ati", "vit", 0.6, {"flip_depth": 2}),
         ("vit", "viterbi", 0.3, {"flip_depth": 1}),
     ]
@@ -74,15 +90,11 @@ if __name__ == "__main__":
 
     for path, score in results:
         print("Path:", " → ".join(path), "| Score:", round(score, 2))
-
-
-# Test using pytest
-def test_symbolic_decoder():
+        def test_symbolic_decoder():
     decoder = SymbolicDecoderSystem()
     transitions = [
         ("identity", "ide", 1.2, {"flip_depth": 1}),
         ("ide", "it", 0.9, {"flip_depth": 1}),
-        ("it", "ati", 0.7, {"flip_depth": 2}),
         ("ati", "viterbi", 0.5, {"flip_depth": 3}),
     ]
 
