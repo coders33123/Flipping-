@@ -1,0 +1,114 @@
+from typing import Callable, Dict, Type
+import math
+import torch
+import torch.nn as nn
+
+# -------------------------
+# Custom Activations
+# -------------------------
+
+class SoftPlus2(nn.Module):
+    """SoftPlus2: log(exp(x)+1) - log(2), zero-centered variant of Softplus."""
+    def __init__(self) -> None:
+        super().__init__()
+        self.ssp = nn.Softplus()
+        self.offset = math.log(2.0)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.ssp(x) - self.offset
+
+
+class SoftExponential(nn.Module):
+    """SoftExponential activation with learnable alpha."""
+    def __init__(self, alpha: float | None = None):
+        super().__init__()
+        self.alpha = nn.Parameter(torch.tensor(0.0 if alpha is None else alpha))
+        self.alpha.requires_grad_(True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        a = self.alpha.item()
+        if a == 0.0:
+            return x
+        elif a < 0.0:
+            return -torch.log(1.0 - a * (x + a)) / a
+        else:
+            return (torch.exp(a * x) - 1.0) / a + a
+
+
+# -------------------------
+# Activation Registry System
+# -------------------------
+
+_ACTIVATION_REGISTRY: Dict[str, Callable[..., nn.Module]] = {
+    "relu": nn.ReLU,
+    "leakyrelu": nn.LeakyReLU,
+    "prelu": nn.PReLU,
+    "gelu": nn.GELU,
+    "sigmoid": nn.Sigmoid,
+    "tanh": nn.Tanh,
+    "softplus": nn.Softplus,
+    "softplus2": SoftPlus2,
+    "softexp": SoftExponential,
+    "swish": nn.SiLU,
+}
+
+
+def register_activation(name: str, cls: Callable[..., nn.Module]) -> None:
+    """Register a new activation function."""
+    _ACTIVATION_REGISTRY[name.lower()] = cls
+
+
+def get_activation(name: str, *args, **kwargs) -> nn.Module:
+    """Retrieve an activation function by name."""
+    name = name.lower()
+    if name not in _ACTIVATION_REGISTRY:
+        raise ValueError(f"Activation '{name}' not found in registry.")
+    return _ACTIVATION_REGISTRY[name](*args, **kwargs)
+
+
+def list_available_activations() -> list[str]:
+    """List all registered activation function names."""
+    return sorted(_ACTIVATION_REGISTRY.keys())
+
+
+def describe_activations() -> None:
+    """Print all registered activations with class info."""
+    for name, cls in _ACTIVATION_REGISTRY.items():
+        print(f"{name}: {cls.__name__ if hasattr(cls, '__name__') else cls.__class__.__name__}")
+
+
+# -------------------------
+# Decorator for Registration
+# -------------------------
+
+def activation(name: str) -> Callable[[Type[nn.Module]], Type[nn.Module]]:
+    def wrapper(cls: Type[nn.Module]) -> Type[nn.Module]:
+        register_activation(name, cls)
+        return cls
+    return wrapper
+
+
+# -------------------------
+# Optional: Dev Testing
+# -------------------------
+
+if __name__ == "__main__":
+    # Built-in activation test
+    act = get_activation("softplus2")
+    print("SoftPlus2 output:", act(torch.tensor([1.0, -1.0])))
+
+    act2 = get_activation("softexp", alpha=0.5)
+    print("SoftExponential output:", act2(torch.tensor([1.0, -1.0])))
+
+    # Dynamic registration
+    @activation("crazy")
+    class MyCrazyActivation(nn.Module):
+        def forward(self, x):
+            return torch.sin(x**2) * torch.exp(-x)
+
+    act3 = get_activation("crazy")
+    print("MyCrazyActivation output:", act3(torch.tensor([1.0, -1.0])))
+
+    # List and describe
+    print("Available:", list_available_activations())
+    describe_activations()
