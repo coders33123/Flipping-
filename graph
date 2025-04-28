@@ -1,0 +1,30 @@
+def add_word(self, word: str, relationships: List[str] = [], encoded_vector: List[int] = []):
+    """
+    Adds a word to the graph with encoded vector and relationships.
+    """
+    self.graph.add_node(word, encoded=encoded_vector)
+    for related_word in relationships:
+        self.graph.add_edge(word, related_word)
+
+def visualize(self):
+    """
+    Visualizes the graph using matplotlib to render nodes with labels.
+    """
+    # Generate the visualization of the graph
+    plt.figure(figsize=(12, 12))
+    pos = nx.spring_layout(self.graph)
+    nx.draw(self.graph, pos, with_labels=True, node_color='skyblue', font_size=12, node_size=5000, font_weight='bold', edge_color='gray')
+    plt.title('Word Relationship Graph')
+    plt.show()
+
+def get_neighbors(self, word: str) -> List[str]:
+    """
+    Returns a list of words directly connected to the specified word.
+    
+    Parameters:
+    word (str): The word for which we want to find neighbors.
+    
+    Returns:
+    list: List of neighboring words.
+    """
+    return list(self.graph.neighbors(word)) if word in self.graph else []
